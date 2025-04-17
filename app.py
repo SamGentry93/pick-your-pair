@@ -6,9 +6,9 @@ from io import BytesIO
 import openai
 
 # Your OpenAI API key will be added via Streamlit Secrets later
-openai.api_key = st.secrets["openai_api_key"]
+openai_client = openai.OpenAI(api_key=st.secrets["openai_api_key"])
 
-# Sample image pool: label + image URL (all royalty-free, with file extensions)
+# Sample image pool: label + image URL (these should be replaced with vivid, high-quality AI-generated images later)
 image_pool = [
     ("Casper the dog", "https://images.pexels.com/photos/4587995/pexels-photo-4587995.jpeg"),
     ("Sunburn chart", "https://images.pexels.com/photos/3997383/pexels-photo-3997383.jpeg"),
@@ -24,7 +24,7 @@ image_pool = [
 def get_random_images():
     return random.sample(image_pool, 6)
 
-# Display image checkboxes
+# Display image checkboxes (larger size, no captions)
 def display_images(images):
     selections = []
     cols = st.columns(3)
@@ -32,11 +32,11 @@ def display_images(images):
         try:
             response = requests.get(url)
             img = Image.open(BytesIO(response.content))
-            if cols[i % 3].checkbox(label):
+            if cols[i % 3].checkbox(" "):
                 selections.append(label)
-            cols[i % 3].image(img, caption=label, use_container_width=True)
+            cols[i % 3].image(img, use_container_width=True)
         except UnidentifiedImageError:
-            cols[i % 3].warning(f"Could not load image: {label}")
+            cols[i % 3].warning(f"Could not load image for: {label}")
     return selections
 
 # Generate funny GPT response
@@ -50,13 +50,13 @@ def generate_response(selected):
     If sunburn is involved, include a dry British comment.
     Keep it to 2 short sentences.
     """
-    
-    response = openai.ChatCompletion.create(
+
+    response = openai_client.chat.completions.create(
         model="gpt-4",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.9
     )
-    return response.choices[0].message['content']
+    return response.choices[0].message.content
 
 # Streamlit app UI
 st.title("🐶 Pick Your Pair: How Are You (Really)?")
