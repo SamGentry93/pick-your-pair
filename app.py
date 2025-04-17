@@ -1,18 +1,18 @@
 import streamlit as st
 import random
 import requests
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 import openai
 
 # Your OpenAI API key will be added via Streamlit Secrets later
 openai.api_key = st.secrets["openai_api_key"]
 
-# Sample image pool: label + image URL (all royalty-free)
+# Sample image pool: label + image URL (all royalty-free, with file extensions)
 image_pool = [
     ("Casper the dog", "https://images.pexels.com/photos/4587995/pexels-photo-4587995.jpeg"),
     ("Sunburn chart", "https://images.pexels.com/photos/3997383/pexels-photo-3997383.jpeg"),
-    ("Octopus on rollerblades", "https://images.unsplash.com/photo-1624880533765-0e2b408b1d40"),
+    ("Octopus on rollerblades", "https://images.pexels.com/photos/16123759/pexels-photo-16123759.jpeg"),
     ("Spaghetti on carpet", "https://images.pexels.com/photos/4109230/pexels-photo-4109230.jpeg"),
     ("Shopping trolley in lake", "https://images.pexels.com/photos/1122534/pexels-photo-1122534.jpeg"),
     ("Overflowing inbox", "https://images.pexels.com/photos/267569/pexels-photo-267569.jpeg"),
@@ -29,11 +29,14 @@ def display_images(images):
     selections = []
     cols = st.columns(3)
     for i, (label, url) in enumerate(images):
-        response = requests.get(url)
-        img = Image.open(BytesIO(response.content))
-        if cols[i % 3].checkbox(label):
-            selections.append(label)
-        cols[i % 3].image(img, caption=label, use_column_width=True)
+        try:
+            response = requests.get(url)
+            img = Image.open(BytesIO(response.content))
+            if cols[i % 3].checkbox(label):
+                selections.append(label)
+            cols[i % 3].image(img, caption=label, use_container_width=True)
+        except UnidentifiedImageError:
+            cols[i % 3].warning(f"Could not load image: {label}")
     return selections
 
 # Generate funny GPT response
